@@ -1,0 +1,81 @@
+substitutions:
+  Name: "Kitchen" # Name for Entities (Capitals allowed)
+  brightness: '70%' # 10 to 99% MAX - At 100% LEDs no longer Strobe!
+
+esphome:
+  name: door-kitchen
+  platform: esp32
+  board: esp-wrover-kit
+
+  ### Turn On the LEDs and reset the counter ###
+  on_boot:
+    then:
+      - light.turn_on: # Turn IR LEDs on at (substitution) Brightness
+          id: ir_led
+          brightness: $brightness
+      - sensor.rotary_encoder.set_value: # Set Counter
+          id: door
+          value: 1
+      - sensor.rotary_encoder.set_value: # Zero Counter
+          id: door
+          value: 0
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+api:
+ota:
+logger:
+
+### Sensors (Rotary Encoder) ###
+sensor:
+  - platform: rotary_encoder
+    name: $Name Occupancy
+    id: door
+    pin_a: GPIO18
+    pin_b: GPIO19
+    pin_reset: GPIO13
+    min_value: 0
+    unit_of_measurement: "People"
+    icon: mdi:account-multiple
+    on_value:
+      - if:
+          condition:
+            - lambda: "return x >= 1;"
+          then:
+            - lambda: |-
+                id(the_switch).publish_state(true);
+          else:
+            - lambda: |-
+                id(the_switch).publish_state(false);
+
+### "Reset Counter Button for  Home Assistant ###
+button:
+  - platform: template
+    name: Reset Occupancy $Name
+    id: reset
+    icon: mdi:close-circle
+    on_press:
+      - sensor.rotary_encoder.set_value:
+          id: door
+          value: 0
+
+### Binary Sensor, for Home Assistant and Automations, etc ###
+binary_sensor:
+  - platform: template
+    device_class: OCCUPANCY
+    id: the_switch
+    name: $Name Occupied
+
+### Light (IR LEDs) and Output Setup ###
+light:
+  - platform: monochromatic
+    id: ir_led
+    default_transition_length: 0s
+    output: led
+output:
+  - platform: ledc
+    pin: GPIO32
+    id: led
+    frequency: 38kHz
