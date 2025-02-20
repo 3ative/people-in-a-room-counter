@@ -4,13 +4,10 @@ substitutions:
 
 esphome:
   name: door-kitchen
-  platform: esp32
-  board: esp-wrover-kit
-
   ### Turn On the LEDs and reset the counter ###
   on_boot:
     then:
-      - light.turn_on: # Turn IR LEDs on at (substitution) Brightness
+      - light.turn_on: # Turn IR LEDs on at 78% Brightness
           id: ir_led
           brightness: $brightness
       - sensor.rotary_encoder.set_value: # Set Counter
@@ -19,6 +16,9 @@ esphome:
       - sensor.rotary_encoder.set_value: # Zero Counter
           id: door
           value: 0
+
+esp32:
+  board: esp-wrover-kit
 
 wifi:
   ssid: !secret wifi_ssid
